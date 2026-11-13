@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study-Hour Optimisation</title>
+<meta name="description" content="An OR project presentation: a mixed integer linear programme that allocates study hours across five MBA courses to reach a target CGPA under relative grading, with three live student demos.">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f6f5f2; --surface:#fcfcfb; --surface-2:#f0efec; --border:#e2e0da; --grid:#ebe9e4;
+  --text:#0b0b0b; --text-2:#52514e; --text-3:#7c7a74;
+  --accent:#2a78d6; --accent-ink:#1c5cab; --on-accent:#fff;
+  --seg1:#184f95; --seg2:#3987e5; --seg3:#9ec5f4;
+  --band7:#e7f1fb; --band8:#cde2fb; --band9:#9ec5f4; --band10:#5598e7;
+  --p1:#2a78d6; --p2:#eb6834; --p3:#1baf7a;
+  --good:#008300; --good-bg:#e5f4e4; --bad:#c4302f; --bad-bg:#fbebeb; --warn-bg:#f9eeda; --warn:#8a5a00;
+  --ref:#7c7a74; --shadow:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111110; --surface:#1a1a19; --surface-2:#242422; --border:#33322f; --grid:#2a2a28;
+    --text:#f0efec; --text-2:#c3c2b7; --text-3:#8f8e86;
+    --accent:#3987e5; --accent-ink:#86b6ef; --on-accent:#fff;
+    --seg1:#86b6ef; --seg2:#3987e5; --seg3:#1c5cab;
+    --band7:#16273b; --band8:#173353; --band9:#1c4673; --band10:#2a64a8;
+    --p1:#3987e5; --p2:#d95926; --p3:#199e70;
+    --good:#5cc35c; --good-bg:#16301a; --bad:#f07a79; --bad-bg:#3a1c1c; --warn-bg:#3a2e14; --warn:#f0c060;
+    --ref:#8f8e86; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111110; --surface:#1a1a19; --surface-2:#242422; --border:#33322f; --grid:#2a2a28;
+  --text:#f0efec; --text-2:#c3c2b7; --text-3:#8f8e86;
+  --accent:#3987e5; --accent-ink:#86b6ef; --on-accent:#fff;
+  --seg1:#86b6ef; --seg2:#3987e5; --seg3:#1c5cab;
+  --band7:#16273b; --band8:#173353; --band9:#1c4673; --band10:#2a64a8;
+  --p1:#3987e5; --p2:#d95926; --p3:#199e70;
+  --good:#5cc35c; --good-bg:#16301a; --bad:#f07a79; --bad-bg:#3a1c1c; --warn-bg:#3a2e14; --warn:#f0c060;
+  --ref:#8f8e86; --shadow:none;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:56px}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 "Inter","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+
+/* ---------- Nav ---------- */
+nav.top{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+nav.top .in{max-width:1280px;margin:0 auto;padding:0 20px;height:52px;display:flex;align-items:center;gap:16px}
+.brand{font-weight:700;font-size:13.5px;white-space:nowrap}
+.links{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.links::-webkit-scrollbar{display:none}
+.links a{font-size:12.5px;color:var(--text-2);text-decoration:none;padding:6px 10px;border-radius:7px;white-space:nowrap}
+.links a:hover{background:var(--surface-2);color:var(--text)}
+.links a.on{background:var(--text);color:var(--surface)}
+.navbtns{display:flex;gap:6px}
+.progress{position:absolute;left:0;bottom:-1px;height:2px;background:var(--accent);width:0;transition:width .2s}
+
+/* ---------- Slides ---------- */
+section.slide{min-height:calc(100vh - 52px);display:flex;flex-direction:column;justify-content:center;padding:40px 24px;border-bottom:1px solid var(--border)}
+.slide > .in{max-width:1240px;width:100%;margin:0 auto}
+.kicker{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);font-weight:650;margin-bottom:6px}
+.kicker .n{font-variant-numeric:tabular-nums;color:var(--accent-ink)}
+h1{font-size:44px;line-height:1.08;margin:8px 0 14px;font-weight:750;letter-spacing:-.025em;max-width:920px}
+h2.st{font-size:30px;line-height:1.15;margin:0 0 8px;font-weight:720;letter-spacing:-.02em}
+.lede{font-size:17px;color:var(--text-2);max-width:820px;margin:0 0 24px}
+h3{font-size:15px;margin:0 0 4px;font-weight:650}
+p{margin:0 0 10px}
+.muted{color:var(--text-2)} .small{font-size:12.5px} .note{font-size:12px;color:var(--text-3)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:18px 20px}
+.card .lead{color:var(--text-2);font-size:13px;margin:0 0 12px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.mt{margin-top:16px}
+button{font:inherit;font-size:13px;border:1px solid var(--border);background:var(--surface);color:var(--text);padding:6px 11px;border-radius:8px;cursor:pointer}
+button:hover{border-color:var(--text-3)}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* cover */
+.cover-meta{display:flex;gap:28px;flex-wrap:wrap;margin:22px 0 30px}
+.cover-meta div{font-size:13px;color:var(--text-2)} .cover-meta b{display:block;color:var(--text);font-size:15px}
+.agenda{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.agenda a{display:block;text-decoration:none;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.agenda a:hover{border-color:var(--accent)}
+.agenda span{display:block;font-size:11px;color:var(--accent-ink);font-weight:700;font-variant-numeric:tabular-nums}
+.agenda b{font-size:14px;font-weight:600}
+.hint{margin-top:18px;font-size:12px;color:var(--text-3)}
+kbd{font:11px/1 ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:2px 5px;background:var(--surface)}
+
+/* problem */
+.qbox{border-left:4px solid var(--accent);background:var(--surface);border-radius:0 12px 12px 0;padding:16px 20px;font-size:18px;font-weight:550;line-height:1.4;margin-bottom:18px;box-shadow:var(--shadow)}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.fact .v{font-size:26px;font-weight:720;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.fact .k{font-size:12.5px;color:var(--text-2)}
+.complist{display:grid;gap:8px;margin-top:10px}
+.comp{display:grid;grid-template-columns:120px 1fr auto;align-items:center;gap:10px;font-size:13px}
+.comp .bar{height:12px;border-radius:4px}
+.tag{font-size:11px;font-weight:650;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.tag.y{background:var(--good-bg);color:var(--good)} .tag.n{background:var(--surface-2);color:var(--text-2)}
+
+/* tables */
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--grid);font-size:13px;vertical-align:top}
+th{font-size:11.5px;color:var(--text-2);font-weight:650;background:var(--surface-2)}
+td.sym{font-family:"Cambria Math","STIX Two Math","Latin Modern Math",Georgia,serif;font-size:15px;white-space:nowrap}
+.tablewrap{overflow-x:auto}
+.num th,.num td{text-align:right;white-space:nowrap} .num th:first-child,.num td:first-child{text-align:left}
+
+/* math */
+.math{font-family:"Cambria Math","STIX Two Math","Latin Modern Math",Georgia,serif}
+.eqbig{font-family:"Cambria Math","STIX Two Math","Latin Modern Math",Georgia,serif;font-size:34px;text-align:center;padding:26px 16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);margin-bottom:16px}
+.eqbig small{display:block;font-family:inherit;font-size:16px;color:var(--text-2);margin-top:8px}
+.eq{font-family:"Cambria Math","STIX Two Math","Latin Modern Math",Georgia,serif;font-size:16px;background:var(--surface-2);border-radius:8px;padding:8px 12px;margin:8px 0}
+.con{display:flex;flex-direction:column}
+.con .id{font-size:11px;font-weight:750;color:var(--accent-ink);letter-spacing:.04em}
+.con .xl{margin-top:auto;font-size:11.5px;color:var(--text-3);font-family:ui-monospace,Menlo,Consolas,monospace}
+.con p{font-size:13px;color:var(--text-2);margin:0 0 8px}
+.callout{border-radius:12px;padding:14px 16px;background:var(--warn-bg);color:var(--text);font-size:13.5px}
+.callout b{color:var(--warn)}
+
+/* demo */
+.persona{display:flex;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.avatar{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-weight:750;font-size:20px;color:#fff;flex:none}
+.persona .who h2{margin:0}
+.persona .who p{margin:2px 0 0;color:var(--text-2);font-size:14px}
+.persona .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.demo-top{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+.ctls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px}
+.ctl label{display:flex;justify-content:space-between;font-size:12px;color:var(--text-2);font-weight:550;margin-bottom:4px}
+.ctl label b{color:var(--text);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.fixed{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.fixed span{font-size:11.5px;background:var(--surface-2);color:var(--text-2);padding:3px 8px;border-radius:6px}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kpi{border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--surface)}
+.kpi .k{font-size:11.5px;color:var(--text-2);font-weight:550}
+.kpi .v{font-size:26px;font-weight:720;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .v small{font-size:13px;font-weight:550;color:var(--text-2);margin-left:3px}
+.kpi .d{font-size:11.5px;color:var(--text-3)}
+.kpi.hero{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.kpi.hero .k,.kpi.hero .d,.kpi.hero .v small{color:rgba(255,255,255,.85)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:650;padding:3px 9px;border-radius:999px}
+.pill.ok{background:var(--good-bg);color:var(--good)} .pill.no{background:var(--bad-bg);color:var(--bad)}
+.insight{margin-top:12px;font-size:13.5px;border-left:3px solid var(--accent);padding:6px 0 6px 12px;color:var(--text)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin:0 0 6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+td input{font:inherit;font-size:13px;width:58px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);text-align:right}
+.grade{display:inline-block;min-width:26px;text-align:center;padding:1px 6px;border-radius:6px;font-weight:700;background:var(--surface-2)}
+.grade.g10{background:var(--accent);color:var(--on-accent)}
+.grade.g7{background:var(--bad-bg);color:var(--bad)}
+
+/* svg */
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:inherit;fill:var(--text-2);font-size:11px}
+svg .val{fill:var(--text);font-weight:650;font-variant-numeric:tabular-nums}
+svg .lbl{fill:var(--text);font-weight:600}
+svg .gridl{stroke:var(--grid)}
+
+/* conclusion */
+.matrix td,.matrix th{text-align:center;white-space:nowrap}
+.matrix td:first-child,.matrix th:first-child{text-align:left}
+.cell{display:inline-flex;align-items:baseline;gap:6px}
+.cell .h{font-variant-numeric:tabular-nums;font-weight:600}
+.takeaways{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tk{display:flex;gap:12px}
+.tk .n{flex:none;width:26px;height:26px;border-radius:8px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-weight:700;font-size:13px}
+.tk p{font-size:13.5px;margin:0;color:var(--text-2)} .tk b{color:var(--text)}
+
+.tip{position:fixed;pointer-events:none;z-index:60;background:var(--text);color:var(--surface);font-size:12px;line-height:1.45;padding:8px 10px;border-radius:8px;opacity:0;transition:opacity .08s;max-width:270px;font-variant-numeric:tabular-nums}
+footer{max-width:1240px;margin:0 auto;padding:18px 24px 40px;font-size:12px;color:var(--text-3);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+@media (max-width:1050px){.g3,.g4,.agenda,.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.demo-top,.g2,.takeaways{grid-template-columns:1fr}h1{font-size:34px}}
+@media (max-width:600px){section.slide{padding:28px 16px}.g3,.g4,.agenda,.facts,.ctls{grid-template-columns:1fr}h1{font-size:28px}h2.st{font-size:23px}.eqbig{font-size:22px}.brand{display:none}.persona .right{margin-left:0}}
+@media print{
+  nav.top,.noprint{display:none!important}
+  section.slide{min-height:auto;break-after:page;padding:16px 0}
+  .card{break-inside:avoid;box-shadow:none}
+  body{background:#fff}
+}
+</style>
+</head>
+<body>
+<nav class="top" aria-label="Sections">
+  <div class="in">
+    <div class="brand">Study-Hour MILP</div>
+    <div class="links" id="links"></div>
+    <div class="navbtns noprint">
+      <button type="button" id="prev" aria-label="Previous section">←</button>
+      <button type="button" id="next" aria-label="Next section">→</button>
+      <button type="button" id="theme" aria-label="Toggle dark mode">◐</button>
+      <button type="button" id="print">Print</button>
+    </div>
+  </div>
+  <div class="progress" id="progress"></div>
+</nav>
+
+<!-- 00 COVER -->
+<section class="slide" id="cover" data-title="Dashboard">
+  <div class="in">
+    <div class="kicker">Operations Research Project · DoMS, IIT Madras</div>
+    <h1>How few hours does it take to hit your target CGPA?</h1>
+    <p class="lede">A mixed integer linear programme that splits a student's study time across five MBA courses. It finds the smallest number of hours that still reaches a target CGPA under relative grading.</p>
+    <div class="cover-meta">
+      <div><b>Mixed integer LP</b>Model type</div>
+      <div><b>5 courses · 30 credits</b>Scope</div>
+      <div><b>Excel Solver (Simplex LP)</b>Solved with</div>
+      <div><b>3 student profiles</b>Demos</div>
+    </div>
+    <div class="agenda" id="agenda"></div>
+    <p class="hint noprint">Use <kbd>←</kbd> <kbd>→</kbd> or <kbd>PgUp</kbd> <kbd>PgDn</kbd> to move between sections. The demos re-solve live when you change any input.</p>
+  </div>
+</section>
+
+<!-- 01 PROBLEM -->
+<section class="slide" id="problem" data-title="Problem Statement">
+  <div class="in">
+    <div class="kicker"><span class="n">01</span> Problem Statement</div>
+    <h2 class="st">Study time is scarce, and grading is relative</h2>
+    <div class="qbox">How should a student split limited study hours across five courses so that they reach a target CGPA with the <u>fewest total hours</u>?</div>
+    <div class="facts">
+      <div class="card fact"><div class="v">5</div><div class="k">courses this term, 6 credits each</div></div>
+      <div class="card fact"><div class="v">4 bands</div><div class="k">grade set by position in the class (10 / 9 / 8 / 7)</div></div>
+      <div class="card fact"><div class="v">70 / 100</div><div class="k">marks that respond to study (mid-sem + final)</div></div>
+      <div class="card fact"><div class="v">↓ returns</div><div class="k">each extra hour earns fewer marks than the last</div></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <h3>Relative grading: grades follow the class curve</h3>
+        <p class="lead">Last year's class mean μ and standard deviation σ split the marks into four bands. Beating μ + σ earns a 10. The same marks can earn a different grade in a different course.</p>
+        <div id="normalCurve"></div>
+      </div>
+      <div class="card">
+        <h3>Where the 100 marks come from</h3>
+        <p class="lead">Only the two exams depend on individual study hours. The project and attendance are fixed inputs.</p>
+        <div class="complist">
+          <div class="comp"><span>Final exam</span><div class="bar" style="width:100%;background:var(--seg1)"></div><span class="tag y">50 · study-driven</span></div>
+          <div class="comp"><span>Mid-semester</span><div class="bar" style="width:40%;background:var(--seg2)"></div><span class="tag y">20 · study-driven</span></div>
+          <div class="comp"><span>Group project</span><div class="bar" style="width:40%;background:var(--surface-2);border:1px solid var(--border)"></div><span class="tag n">20 · fixed P</span></div>
+          <div class="comp"><span>Attendance</span><div class="bar" style="width:20%;background:var(--surface-2);border:1px solid var(--border)"></div><span class="tag n">10 · for attending</span></div>
+        </div>
+        <div class="callout mt"><b>Trade-off.</b> Hours spent on one course can't go to another. Confidence differs by course, so the same hour buys more marks in some courses than in others. The model decides which grade to target in each course, and how many hours that grade needs.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 VARIABLES -->
+<section class="slide" id="variables" data-title="Variable Definitions">
+  <div class="in">
+    <div class="kicker"><span class="n">02</span> Variable Definitions</div>
+    <h2 class="st">Indices, parameters and decision variables</h2>
+    <p class="lede">The solver chooses three things for each course: the hours in each productivity segment (h), and which grade band to aim for (y).</p>
+    <div class="g2">
+      <div class="card">
+        <h3>Decision variables</h3>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Symbol</th><th>Type</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td class="sym">h<sub>i1</sub>, h<sub>i2</sub>, h<sub>i3</sub></td><td>Continuous, 0 ≤ h<sub>ij</sub> ≤ w<sub>j</sub></td><td>Hours of course i in segment j (concepts → practice → revision)</td></tr>
+            <tr><td class="sym">t<sub>i</sub></td><td>Continuous, derived</td><td>Total hours on course i = h<sub>i1</sub> + h<sub>i2</sub> + h<sub>i3</sub></td></tr>
+            <tr><td class="sym">y<sub>ik</sub></td><td>Binary {0, 1}</td><td>1 if course i targets grade band k (10, 9, 8, 7)</td></tr>
+            <tr><td class="sym">S<sub>i</sub>, x<sub>i</sub></td><td>Derived</td><td>Total marks (/100) and grade point earned in course i</td></tr>
+          </tbody>
+        </table></div>
+        <h3 class="mt">Indices</h3>
+        <div class="tablewrap"><table>
+          <tbody>
+            <tr><td class="sym">i ∈ {1…5}</td><td>Course: FM, OR, Programming, OB, Marketing</td></tr>
+            <tr><td class="sym">j ∈ {1, 2, 3}</td><td>Segment of the hours-to-marks curve</td></tr>
+            <tr><td class="sym">k ∈ {1…4}</td><td>Grade band with points G = (10, 9, 8, 7)</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h3>Parameters</h3>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Symbol</th><th>Meaning</th><th>Source</th></tr></thead>
+          <tbody>
+            <tr><td class="sym">c<sub>i</sub></td><td>Credits of course i (6 each)</td><td>Curriculum</td></tr>
+            <tr><td class="sym">κ<sub>i</sub>, η<sub>i</sub> = κ<sub>i</sub>/5</td><td>Confidence (1–5) and learning efficiency</td><td>Student self-rating</td></tr>
+            <tr><td class="sym">μ<sub>i</sub>, σ<sub>i</sub></td><td>Last year's class mean and SD (relative average)</td><td>Past results</td></tr>
+            <tr><td class="sym">L<sub>ik</sub></td><td>Band cut-offs: μ+σ, μ, μ−σ, 0</td><td>From μ, σ</td></tr>
+            <tr><td class="sym">A, P<sub>i</sub></td><td>Attendance (10) and expected project marks (/20)</td><td>Fixed components</td></tr>
+            <tr><td class="sym">E⁰</td><td>Exam marks expected with no extra study (/70)</td><td>Student estimate</td></tr>
+            <tr><td class="sym">w<sub>j</sub>, β<sub>j</sub></td><td>Segment width (h) and marks per hour</td><td>Assumed curve</td></tr>
+            <tr><td class="sym">T<sub>max</sub>, T<sub>target</sub></td><td>Hours available and target CGPA</td><td>Student's plan</td></tr>
+            <tr><td class="sym">t<sup>min</sup>, t<sup>max</sup></td><td>Hour floor and ceiling per course</td><td>Policy choice</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="card mt">
+      <div class="g2" style="align-items:center">
+        <div>
+          <h3>Width w and slope β: diminishing returns, like electricity slabs in reverse</h3>
+          <p class="lead" style="margin-bottom:6px">The first w₁ = 10 hours earn β₁ = 2.0 marks per hour. The next 10 earn 1.2, and the last 15 earn 0.6. Confidence scales every slope by η. Because β₁ &gt; β₂ &gt; β₃, the solver fills segment 1 first on its own, so no extra binary variables are needed.</p>
+          <p class="note">Example (η = 1, 15 h): 10 h × 2.0 + 5 h × 1.2 = 26 exam marks → h₁ = 10, h₂ = 5, h₃ = 0.</p>
+        </div>
+        <div id="slabCurve"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 OBJECTIVE -->
+<section class="slide" id="objective" data-title="Objective Function">
+  <div class="in">
+    <div class="kicker"><span class="n">03</span> Objective Function</div>
+    <h2 class="st">Minimise total study hours</h2>
+    <p class="lede">The target CGPA is a requirement, not the goal. Once it's met, every hour saved can go to placements, clubs or rest.</p>
+    <div class="eqbig">min&nbsp; Z = Σ<sub>i=1</sub><sup>5</sup> t<sub>i</sub> = Σ<sub>i</sub> ( h<sub>i1</sub> + h<sub>i2</sub> + h<sub>i3</sub> )<small>Excel: Set Objective → Model!$B$38 = SUM(Hours t), To: Min</small></div>
+    <div class="g3">
+      <div class="card"><h3>Why minimise hours?</h3><p class="muted small">Study time has an opportunity cost. A plan that reaches 9.0 in 45 h beats one that reaches it in 80 h, because the 35 spare hours have other uses.</p></div>
+      <div class="card"><h3>Why is it linear?</h3><p class="muted small">Z is a plain sum of hour variables, and every marks and grade relationship is a linear equation or inequality. The step from marks to grade is handled with binary variables y, which makes the model a mixed integer LP.</p></div>
+      <div class="card"><h3>The mirror question</h3><p class="muted small">Dropping the CGPA constraint and maximising Σ c<sub>i</sub>x<sub>i</sub> / Σ c<sub>i</sub> within T<sub>max</sub> gives the best CGPA reachable. Solving both shows whether the target is achievable and at what cost.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 CONSTRAINTS -->
+<section class="slide" id="constraints" data-title="Constraints">
+  <div class="in">
+    <div class="kicker"><span class="n">04</span> Constraints</div>
+    <h2 class="st">Nine constraint families keep the plan feasible and realistic</h2>
+    <p class="lede">Each one maps to a constraint row in Excel Solver.</p>
+    <div class="g3" id="conGrid"></div>
+    <div class="callout mt"><b>Implementation note: degeneracy.</b> When the hour floor t<sup>min</sup> forces more hours than a grade needs, many splits of h are equally optimal. That's why Excel can show h₃ filling before h₁. Total hours and grades are unaffected. This dashboard breaks the tie by filling segments in order, and a tiny penalty on h₂ and h₃ does the same in Excel.</div>
+  </div>
+</section>
+
+<!-- 05–07 DEMOS -->
+<section class="slide" id="demo-finance" data-title="Demo · Finance"><div class="in" data-demo="finance"></div></section>
+<section class="slide" id="demo-engineer" data-title="Demo · Engineer"><div class="in" data-demo="engineer"></div></section>
+<section class="slide" id="demo-nonengineer" data-title="Demo · Non-Engineer"><div class="in" data-demo="nonengineer"></div></section>
+
+<!-- 08 CONCLUSION -->
+<section class="slide" id="conclusion" data-title="Conclusion">
+  <div class="in">
+    <div class="kicker"><span class="n">08</span> Conclusion</div>
+    <h2 class="st">Same courses, three different optimal plans</h2>
+    <p class="lede" id="concLede"></p>
+    <div class="card">
+      <h3>Optimal hours and grade by course</h3>
+      <p class="lead">Baseline scenario for each profile. Shading shows hours: darker means more.</p>
+      <div class="tablewrap"><table class="matrix" id="matrix"></table></div>
+    </div>
+    <div class="g2 mt">
+      <div class="card">
+        <h3>Effort frontier: hours needed per target CGPA</h3>
+        <p class="lead">Each profile's own budget and limits apply. A line ends where the target becomes infeasible.</p>
+        <div class="legend" id="frontLegend"></div>
+        <div id="frontier"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px">Key takeaways</h3>
+        <div class="takeaways" id="takeaways" style="grid-template-columns:1fr"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>DoMS, IIT Madras · Operations Research project. Finance and Engineer inputs come from the project workbook. Non-Engineer inputs are illustrative.</span>
+  <span>Solved in-browser by exact enumeration of all 4⁵ grade-band combinations (matches Excel Solver).</span>
+</footer>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script>
+(() => {
+"use strict";
+/* ================= DATA ================= */
+const COURSES = [
+  { name:"Financial Management",       short:"FM",          c:6, mu:62, sd:12, P:17 },
+  { name:"Operation Research",         short:"OR",          c:6, mu:58, sd:10, P:16 },
+  { name:"Programming for Management", short:"Programming", c:6, mu:65, sd:11, P:18 },
+  { name:"Organisational Behaviour",   short:"OB",          c:6, mu:55, sd:13, P:15 },
+  { name:"Marketing Tools",            short:"Marketing",   c:6, mu:60, sd:9,  P:17 }
+];
+const COMMON = { A:10, cap:70, beta:[2.0,1.2,0.6], G:[10,9,8,7] };
+const PROFILES = {
+  finance: { num:"05", key:"finance", initials:"D", color:"var(--p1)", title:"Durga · Finance background",
+    blurb:"Confident in finance and marketing, less so in programming and OB. A tight 56-hour budget.",
+    source:"Inputs from the workbook tab “Durga Finance”.",
+    target:8.5, Tmax:56, tmin:5, tmax:40, E0:18, w:[10,10,20], kappa:[5,3,2,2.5,4] },
+  engineer: { num:"06", key:"engineer", initials:"V", color:"var(--p2)", title:"Visal · Engineering background",
+    blurb:"Strong in programming and quantitative courses. Sets a 10-hour floor for every course so nothing is neglected.",
+    source:"Inputs from the workbook tab “Visal Engineer”.",
+    target:8.0, Tmax:70, tmin:10, tmax:30, E0:10, w:[10,10,15], kappa:[3,4.5,5,4,4] },
+  nonengineer: { num:"07", key:"nonengineer", initials:"N", color:"var(--p3)", title:"Non-Engineering background",
+    blurb:"A commerce or humanities graduate: very confident in OB and marketing, weak in programming and OR.",
+    source:"Illustrative inputs (no workbook tab). Replace with real data.",
+    target:8.6, Tmax:75, tmin:5, tmax:40, E0:14, w:[10,10,15], kappa:[3.5,2,1.5,5,4.5] }
+};
+const clone = o => JSON.parse(JSON.stringify(o));
+
+/* ================= SOLVER ================= */
+const EPS=1e-9;
+const cutsOf = c => [c.mu+c.sd, c.mu, c.mu-c.sd, 0];
+function hoursToGain(eta, gain, sc){
+  if (gain<=EPS) return 0;
+  let h=0, left=gain;
+  for (let j=0;j<3;j++){ const cap=eta*COMMON.beta[j]*sc.w[j]; if (left<=cap+EPS) return h+left/(eta*COMMON.beta[j]); left-=cap; h+=sc.w[j]; }
+  return Infinity;
+}
+function split(t, w){ const h=[0,0,0]; let r=t; for (let j=0;j<3;j++){ h[j]=Math.min(r,w[j]); r-=h[j]; } return h; }
+function examOf(eta,h,sc){ return sc.E0 + eta*h.reduce((a,x,j)=>a+COMMON.beta[j]*x,0); }
+function optionsFor(i, sc){
+  const c=COURSES[i], eta=sc.kappa[i]/5, L=cutsOf(c), base=COMMON.A+c.P+sc.E0, out=[];
+  const tCap=Math.min(sc.tmax, sc.w.reduce((a,b)=>a+b,0));
+  for (let k=0;k<4;k++){
+    const need=L[k]-base;
+    if (sc.E0+Math.max(need,0) > COMMON.cap+EPS) continue;
+    let t=hoursToGain(eta,need,sc); if (!isFinite(t)) continue;
+    t=Math.max(t, sc.tmin); if (t>tCap+EPS) continue;
+    const h=split(t,sc.w), E=Math.min(examOf(eta,h,sc),COMMON.cap), S=COMMON.A+c.P+E;
+    let ka=3; for (let q=0;q<4;q++) if (S>=L[q]-1e-6){ ka=q; break; }
+    out.push({ k, ka, t, h, E, S, cut:L[k] });
+  }
+  return out;
+}
+function solve(sc, target){
+  target = target==null ? sc.target : target;
+  const opts=COURSES.map((_,i)=>optionsFor(i,sc));
+  if (opts.some(o=>!o.length)) return null;
+  const C=COURSES.reduce((a,c)=>a+c.c,0), need=target*C-1e-7;
+  let best=null; const pick=new Array(5);
+  (function rec(i,hrs,gp){
+    if (hrs>sc.Tmax+1e-7) return;
+    if (best && hrs>best.hours+1e-9) return;
+    if (i===5){ if (gp<need) return;
+      if (!best || hrs<best.hours-1e-9 || (Math.abs(hrs-best.hours)<=1e-9 && gp>best.gp)) best={hours:hrs,gp,plan:pick.slice()};
+      return; }
+    for (const o of opts[i]){ pick[i]=o; rec(i+1,hrs+o.t,gp+COURSES[i].c*COMMON.G[o.ka]); }
+  })(0,0,0);
+  if (best){ best.C=C; best.cgpa=best.gp/C; }
+  return best;
+}
+
+/* ================= HELPERS ================= */
+const $=id=>document.getElementById(id);
+const f1=x=>(Math.round(x*10)/10).toFixed(1), f2=x=>x.toFixed(2);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const tip=$("tip");
+function moveTip(e){ const p=14,r=tip.getBoundingClientRect(); let x=e.clientX+p,y=e.clientY+p; if(x+r.width>innerWidth-8)x=e.clientX-r.width-p; if(y+r.height>innerHeight-8)y=e.clientY-r.height-p; tip.style.left=x+"px"; tip.style.top=y+"px"; }
+function bindTips(root){ root.querySelectorAll("[data-tip]").forEach(el=>{ el.addEventListener("mouseenter",e=>{tip.innerHTML=el.getAttribute("data-tip");tip.style.opacity=1;moveTip(e);}); el.addEventListener("mousemove",moveTip); el.addEventListener("mouseleave",()=>tip.style.opacity=0); }); }
+function roundedBar(x,y,w,h,r,right){ r=Math.min(r,w,h/2); if(!right||w<=r) return `M${x},${y}h${Math.max(w,0)}v${h}h${-Math.max(w,0)}Z`; return `M${x},${y}h${w-r}a${r},${r} 0 0 1 ${r},${r}v${h-2*r}a${r},${r} 0 0 1 ${-r},${r}h${-(w-r)}Z`; }
+const niceMax=v=>{ for (const s of [10,20,25,30,40,50,60,80,100,120,150,200]) if (v<=s) return s; return Math.ceil(v/50)*50; };
+
+/* ================= STATIC VISUALS ================= */
+function drawNormal(){
+  const W=560,H=210,l=20,r=20,t=24,b=30, xs=v=>l+(v+3.2)/6.4*(W-l-r), pdf=z=>Math.exp(-z*z/2), ys=v=>t+(1-v)*(H-t-b);
+  const bands=[[-3.2,-1,"var(--band7)","7","~16%"],[-1,0,"var(--band8)","8","~34%"],[0,1,"var(--band9)","9","~34%"],[1,3.2,"var(--band10)","10","~16%"]];
+  let g="";
+  bands.forEach(([a,bb,f,gr,sh])=>{ let d=`M${xs(a)},${ys(0)}`; for(let z=a;z<=bb+1e-9;z+=0.05) d+=`L${xs(z)},${ys(pdf(z))}`; d+=`L${xs(bb)},${ys(0)}Z`; g+=`<path d="${d}" fill="${f}"/>`;
+    const mid=(Math.max(a,-2.4)+Math.min(bb,2.4))/2; g+=`<text x="${xs(mid)}" y="${ys(0)-22}" text-anchor="middle" class="lbl" style="font-size:14px">${gr}</text><text x="${xs(mid)}" y="${ys(0)-8}" text-anchor="middle" style="font-size:10px">${sh}</text>`; });
+  let d=""; for(let z=-3.2;z<=3.2;z+=0.05) d+=(d?"L":"M")+xs(z)+","+ys(pdf(z)); g+=`<path d="${d}" fill="none" stroke="var(--accent-ink)" stroke-width="2"/>`;
+  [[-1,"μ − σ"],[0,"μ"],[1,"μ + σ"]].forEach(([z,lab])=>{ g+=`<line x1="${xs(z)}" x2="${xs(z)}" y1="${ys(pdf(z))}" y2="${ys(0)+4}" stroke="var(--text)" stroke-width="1.2" stroke-dasharray="3 3"/><text x="${xs(z)}" y="${ys(0)+16}" text-anchor="middle" class="lbl">${lab}</text>`; });
+  g+=`<line x1="${l}" x2="${W-r}" y1="${ys(0)}" y2="${ys(0)}" stroke="var(--border)"/>`;
+  g+=`<text x="${W-r}" y="${t-8}" text-anchor="end">Grade point by band →</text>`;
+  $("normalCurve").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Normal curve split into four grade bands at mu minus sigma, mu and mu plus sigma">${g}</svg>`;
+}
+function drawSlab(){
+  const W=520,H=230,l=40,r=20,t=18,b=34, w=[10,10,15], beta=COMMON.beta, tm=35, xs=v=>l+v/tm*(W-l-r), ymax=45, ys=v=>t+(1-v/ymax)*(H-t-b);
+  let g=""; for(let v=0;v<=40;v+=10) g+=`<line class="gridl" x1="${l}" x2="${W-r}" y1="${ys(v)}" y2="${ys(v)}"/><text x="${l-8}" y="${ys(v)+4}" text-anchor="end">${v}</text>`;
+  for(let v=0;v<=35;v+=5) g+=`<text x="${xs(v)}" y="${H-16}" text-anchor="middle">${v}</text>`;
+  g+=`<text x="${(l+W-r)/2}" y="${H}" text-anchor="middle">Study hours on one course</text><text x="${l-8}" y="${t-6}" text-anchor="end" style="font-size:10px">marks gained</text>`;
+  let x=0,y=0; const fills=["var(--seg1)","var(--seg2)","var(--seg3)"];
+  w.forEach((wj,j)=>{ const y2=y+beta[j]*wj; g+=`<path d="M${xs(x)},${ys(0)}L${xs(x)},${ys(y)}L${xs(x+wj)},${ys(y2)}L${xs(x+wj)},${ys(0)}Z" fill="${fills[j]}" opacity=".22"/>`;
+    g+=`<line x1="${xs(x)}" x2="${xs(x+wj)}" y1="${ys(y)}" y2="${ys(y2)}" stroke="${fills[j]}" stroke-width="3" stroke-linecap="round"/>`;
+    g+=`<text x="${xs(x+wj*0.64)}" y="${ys(0)-8}" text-anchor="middle" class="lbl">w${"₁₂₃"[j]} = ${wj} h</text><text x="${xs(x+wj*0.64)}" y="${ys(0)-22}" text-anchor="middle">β${"₁₂₃"[j]} = ${beta[j]}/h</text>`;
+    if (j<2) g+=`<line x1="${xs(x+wj)}" x2="${xs(x+wj)}" y1="${t}" y2="${ys(0)}" stroke="var(--border)" stroke-dasharray="2 3"/>`;
+    x+=wj; y=y2; });
+  g+=`<text class="val" x="${xs(35)}" y="${ys(41)-8}" text-anchor="end">max +41 marks at 35 h</text>`;
+  $("slabCurve").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Piecewise linear hours to marks curve with three segments">${g}</svg>`;
+}
+const CONS=[
+  ["C1","Target CGPA","Σ c<sub>i</sub>x<sub>i</sub> ≥ T<sub>target</sub> · Σ c<sub>i</sub>","Credit-weighted grade points must reach the target. Multiplying by Σc keeps it linear.","$B$40 ≥ $B$41"],
+  ["C2","Time budget","Σ t<sub>i</sub> ≤ T<sub>max</sub>","Total hours can't exceed what the student has available.","$B$38 ≤ $B$5"],
+  ["C3","Marks definition","S<sub>i</sub> = A + P<sub>i</sub> + E⁰ + η<sub>i</sub> Σ<sub>j</sub> β<sub>j</sub>h<sub>ij</sub>","Attendance + project + exam marks. Exam marks grow with hours, scaled by confidence.","Formula in column D"],
+  ["C4","Exam ceiling","E<sub>i</sub> ≤ 70","Mid-sem (20) + final (50) can't exceed 70.","$C$31:$C$35 ≤ $B$9"],
+  ["C5","One band per course","Σ<sub>k</sub> y<sub>ik</sub> = 1","Each course targets exactly one grade band.","$J$31:$J$35 = 1"],
+  ["C6","Reach the cut-off","S<sub>i</sub> ≥ Σ<sub>k</sub> L<sub>ik</sub> y<sub>ik</sub>","Marks must reach the chosen band's cut-off. This links hours to grades.","$D$31:$D$35 ≥ $I$31:$I$35"],
+  ["C7","Grade point","x<sub>i</sub> = Σ<sub>k</sub> G<sub>k</sub> y<sub>ik</sub> ≤ 10","The grade earned equals the chosen band's points.","Formula in column K"],
+  ["C8","Hour bounds","t<sup>min</sup> ≤ t<sub>i</sub> ≤ t<sup>max</sup>","A floor keeps every course in revision. A ceiling avoids over-concentration.","$B$31:$B$35 vs $B$7, $B$8"],
+  ["C9","Segments and binaries","0 ≤ h<sub>ij</sub> ≤ w<sub>j</sub>,&nbsp; y<sub>ik</sub> ∈ {0,1}","Each segment's hours stay within its width, and band choices are 0/1.","h ≤ $E$6:$G$6 · y = bin"]
+];
+function drawCons(){ $("conGrid").innerHTML=CONS.map(([id,n,eq,txt,xl])=>`<div class="card con"><div class="id">${id}</div><h3>${n}</h3><div class="eq">${eq}</div><p>${txt}</p><div class="xl">Excel: ${xl}</div></div>`).join(""); }
+
+/* ================= DEMO ================= */
+function chartAlloc(sol, sc){
+  const W=640,rowH=44,top=10,left=184,right=86,H=top+rowH*5+24;
+  const xmax=niceMax(Math.max(...sol.plan.map(p=>p.t),10)), sx=v=>left+v/xmax*(W-left-right);
+  let g="", step=xmax<=30?5:10;
+  for(let v=0;v<=xmax;v+=step) g+=`<line class="gridl" x1="${sx(v)}" x2="${sx(v)}" y1="${top}" y2="${H-22}"/><text x="${sx(v)}" y="${H-6}" text-anchor="middle">${v}</text>`;
+  g+=`<text x="${sx(xmax)+10}" y="${H-6}">hours</text><text x="${W-right+50}" y="${top}" text-anchor="middle" style="font-size:10px">grade</text>`;
+  if (sc.tmin>0){ g+=`<line x1="${sx(sc.tmin)}" x2="${sx(sc.tmin)}" y1="${top}" y2="${H-22}" stroke="var(--ref)" stroke-dasharray="4 3"/><text x="${sx(sc.tmin)+4}" y="${top+4}" style="font-size:10px">floor ${sc.tmin} h</text>`; }
+  sol.plan.forEach((p,i)=>{
+    const c=COURSES[i], y=top+i*rowH+10, bh=22;
+    g+=`<text x="${left-12}" y="${y+bh/2+4}" text-anchor="end" class="lbl">${esc(c.name)}</text>`;
+    let x0=left; const last=p.h.reduce((a,v,j)=>v>1e-6?j:a,-1);
+    p.h.forEach((hv,j)=>{ if(hv<=1e-6) return; const w=sx(hv)-left, gap=j<last?2:0, rate=sc.kappa[i]/5*COMMON.beta[j];
+      g+=`<path d="${roundedBar(x0,y,Math.max(w-gap,.5),bh,4,j===last)}" fill="var(--seg${j+1})" data-tip="<b>${esc(c.name)} · segment ${j+1}</b><br>${f1(hv)} h of ${sc.w[j]} h width<br>${rate.toFixed(2)} marks per hour<br>+${f1(hv*rate)} exam marks"/>`; x0+=w; });
+    g+=`<text class="val" x="${x0+8}" y="${y+bh/2+4}">${f1(p.t)} h</text>`;
+    const gp=COMMON.G[p.ka], gx=W-right+50, fill=gp===10?"var(--accent)":gp===7?"var(--bad-bg)":"var(--surface-2)", tc=gp===10?"#fff":gp===7?"var(--bad)":"var(--text)";
+    g+=`<rect x="${gx-15}" y="${y+1}" width="30" height="20" rx="6" fill="${fill}"/><text x="${gx}" y="${y+15}" text-anchor="middle" style="font-weight:700;fill:${tc}">${gp}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Optimal hours per course">${g}</svg>`;
+}
+function chartBands(sol){
+  const W=640,rowH=40,l=184,r=24,t=14,H=t+rowH*5+22, sx=v=>l+(v-30)/70*(W-l-r);
+  let g=""; for(let v=30;v<=100;v+=10) g+=`<text x="${sx(v)}" y="${H-4}" text-anchor="middle">${v}</text>`;
+  const fills=["var(--band10)","var(--band9)","var(--band8)","var(--band7)"];
+  sol.plan.forEach((p,i)=>{ const c=COURSES[i], y=t+i*rowH+6, bh=20, L=cutsOf(c), edges=[100,L[0],L[1],L[2],30].map(v=>Math.max(30,Math.min(100,v)));
+    g+=`<text x="${l-12}" y="${y+bh/2+4}" text-anchor="end" class="lbl">${esc(c.short)}</text>`;
+    for(let k=3;k>=0;k--){ const x1=sx(edges[k+1]),x2=sx(edges[k]); if(x2-x1<=0) continue; g+=`<rect x="${x1+1}" y="${y}" width="${Math.max(x2-x1-2,0)}" height="${bh}" rx="3" fill="${fills[k]}" data-tip="<b>${esc(c.name)} · grade ${COMMON.G[k]}</b><br>${k===3?'below '+f1(L[2]):f1(L[k])+(k===0?' and above':' to '+f1(L[k-1]))} marks"/>`; }
+    const mx=sx(Math.max(30,Math.min(p.S,100)));
+    g+=`<circle cx="${mx}" cy="${y+bh/2}" r="6.5" fill="var(--text)" stroke="var(--surface)" stroke-width="2.5" data-tip="<b>${esc(c.name)}</b><br>Planned marks ${f1(p.S)} → grade ${COMMON.G[p.ka]}<br>Class μ ${c.mu}, σ ${c.sd}"/>`;
+    g+=`<text class="val" x="${mx}" y="${y-4}" text-anchor="middle" style="font-size:10.5px">${f1(p.S)}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Planned marks against grade bands">${g}</svg>`;
+}
+function insightFor(sol, sc){
+  if (!sol) return "No feasible plan: raise the budget or the hour ceiling, or lower the target.";
+  const floorBound=sol.plan.filter(p=>Math.abs(p.t-sc.tmin)<1e-6).length;
+  const tens=sol.plan.map((p,i)=>COMMON.G[p.ka]===10?COURSES[i].short:null).filter(Boolean);
+  const sevens=sol.plan.map((p,i)=>COMMON.G[p.ka]===7?COURSES[i].short:null).filter(Boolean);
+  const top=sol.plan.map((p,i)=>({i,t:p.t})).sort((a,b)=>b.t-a.t)[0];
+  const parts=[`Most time goes to <b>${COURSES[top.i].short}</b> (${f1(top.t)} h).`];
+  if (tens.length) parts.push(`The plan aims for 10s in <b>${tens.join(" and ")}</b>, where high confidence makes marks cheap.`);
+  if (sevens.length) parts.push(`It accepts a <b>7 in ${sevens.join(", ")}</b>, because those grade points are cheaper to earn in other courses.`);
+  if (floorBound>=3) parts.push(`The ${sc.tmin}-hour floor binds for <b>${floorBound} of 5 courses</b>, so the policy itself drives most of the effort.`);
+  parts.push(`${f1(sc.Tmax-sol.hours)} h of the ${sc.Tmax} h budget stays free.`);
+  return parts.join(" ");
+}
+function mountDemo(root, preset){
+  let sc=clone(preset);
+  root.innerHTML=`
+    <div class="kicker"><span class="n">${preset.num}</span> Demo · ${preset.key==="finance"?"Finance":preset.key==="engineer"?"Engineer":"Non-Engineer"}</div>
+    <div class="persona">
+      <div class="avatar" style="background:${preset.color}">${preset.initials}</div>
+      <div class="who"><h2 class="st">${esc(preset.title)}</h2><p>${esc(preset.blurb)}</p></div>
+      <div class="right noprint"><span class="note">${esc(preset.source)}</span><button type="button" data-reset>Reset</button></div>
+    </div>
+    <div class="demo-top">
+      <div class="card">
+        <h3>Scenario inputs</h3>
+        <div class="ctls">
+          <div class="ctl"><label>Target CGPA <b data-v="target"></b></label><input type="range" data-k="target" min="7" max="10" step="0.05" aria-label="Target CGPA"></div>
+          <div class="ctl"><label><span>Time budget T<sub>max</sub></span> <b data-v="Tmax"></b></label><input type="range" data-k="Tmax" min="25" max="150" step="1" aria-label="Time budget"></div>
+          <div class="ctl"><label>Min hours per course <b data-v="tmin"></b></label><input type="range" data-k="tmin" min="0" max="15" step="1" aria-label="Minimum hours"></div>
+          <div class="ctl"><label>Max hours per course <b data-v="tmax"></b></label><input type="range" data-k="tmax" min="10" max="40" step="1" aria-label="Maximum hours"></div>
+        </div>
+        <div class="fixed" data-fixed></div>
+      </div>
+      <div class="kpis">
+        <div class="kpi hero"><div class="k">Minimum total hours Z*</div><div class="v" data-o="hours">–</div><div class="d" data-o="hoursD"></div></div>
+        <div class="kpi"><div class="k">Achieved CGPA</div><div class="v" data-o="cgpa">–</div><div class="d" data-o="cgpaD"></div></div>
+        <div class="kpi"><div class="k">Budget used</div><div class="v" data-o="budget">–</div><div class="d" data-o="budgetD"></div></div>
+        <div class="kpi"><div class="k">Solver status</div><div class="v" style="font-size:16px;margin-top:6px" data-o="status">–</div><div class="d" data-o="statusD"></div></div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="card"><h3>Optimal hours by course</h3>
+        <div class="legend"><span><i style="background:var(--seg1)"></i>h₁ concepts</span><span><i style="background:var(--seg2)"></i>h₂ practice</span><span><i style="background:var(--seg3)"></i>h₃ revision</span></div>
+        <div data-chart="alloc"></div></div>
+      <div class="card"><h3>Planned marks vs grade bands</h3>
+        <div class="legend"><span><i style="background:var(--band7)"></i>7</span><span><i style="background:var(--band8)"></i>8</span><span><i style="background:var(--band9)"></i>9</span><span><i style="background:var(--band10)"></i>10</span><span><i style="background:var(--text);border-radius:50%"></i>Planned marks</span></div>
+        <div data-chart="bands"></div></div>
+    </div>
+    <div class="card mt">
+      <div class="tablewrap"><table class="num">
+        <thead><tr><th>Course</th><th>Confidence κ</th><th>η</th><th>h₁</th><th>h₂</th><th>h₃</th><th>Hours t</th><th>Exam /70</th><th>Marks S</th><th>Cut-off</th><th>Grade</th></tr></thead>
+        <tbody data-tbody></tbody><tfoot data-tfoot></tfoot>
+      </table></div>
+      <div class="insight" data-insight></div>
+    </div>`;
+  const q=s=>root.querySelector(s);
+  const tb=q("[data-tbody]");
+  tb.innerHTML=COURSES.map((c,i)=>`<tr data-i="${i}"><td>${esc(c.name)}</td><td><input type="number" min="1" max="5" step="0.5" value="${sc.kappa[i]}" aria-label="Confidence ${esc(c.name)}"></td><td data-c="eta"></td><td data-c="h0"></td><td data-c="h1"></td><td data-c="h2"></td><td data-c="t"></td><td data-c="E"></td><td data-c="S"></td><td data-c="cut"></td><td data-c="g"></td></tr>`).join("");
+  tb.querySelectorAll("input").forEach(inp=>inp.addEventListener("input",()=>{ const v=parseFloat(inp.value); if(!isFinite(v)) return; sc.kappa[+inp.closest("tr").dataset.i]=Math.min(5,Math.max(1,v)); render(); }));
+  root.querySelectorAll("input[type=range]").forEach(el=>el.addEventListener("input",()=>{ sc[el.dataset.k]=+el.value; if(sc.tmin>sc.tmax){ sc.tmax=sc.tmin; } render(); }));
+  q("[data-reset]").addEventListener("click",()=>{ sc=clone(preset); tb.querySelectorAll("input").forEach((inp,i)=>inp.value=sc.kappa[i]); render(); });
+  function render(){
+    root.querySelectorAll("input[type=range]").forEach(el=>el.value=sc[el.dataset.k]);
+    q('[data-v="target"]').textContent=f2(sc.target); q('[data-v="Tmax"]').textContent=sc.Tmax+" h"; q('[data-v="tmin"]').textContent=sc.tmin+" h"; q('[data-v="tmax"]').textContent=sc.tmax+" h";
+    q("[data-fixed]").innerHTML=[`E⁰ = ${sc.E0}/70`,`w = (${sc.w.join(", ")}) h`,`β = (${COMMON.beta.join(", ")})`,`6 credits × 5 courses`].map(s=>`<span>${s}</span>`).join("");
+    const sol=solve(sc), o=k=>q(`[data-o="${k}"]`);
+    if (sol){
+      o("hours").innerHTML=`${f1(sol.hours)}<small>h</small>`; o("hoursD").textContent=`vs ${sc.Tmax} h available`;
+      o("cgpa").textContent=f2(sol.cgpa); o("cgpaD").textContent=`target ${f2(sc.target)}`;
+      o("budget").innerHTML=`${Math.round(sol.hours/sc.Tmax*100)}<small>%</small>`; o("budgetD").textContent=`${f1(sc.Tmax-sol.hours)} h left`;
+      o("status").innerHTML=`<span class="pill ok">✓ Optimal</span>`; o("statusD").textContent="All constraints met";
+      q('[data-chart="alloc"]').innerHTML=chartAlloc(sol,sc); q('[data-chart="bands"]').innerHTML=chartBands(sol);
+    } else {
+      ["hours","cgpa","budget"].forEach(k=>o(k).textContent="–"); ["hoursD","cgpaD","budgetD"].forEach(k=>o(k).textContent="");
+      o("status").innerHTML=`<span class="pill no">✕ Infeasible</span>`; o("statusD").textContent="Target unreachable";
+      const m=`<p class="muted" style="padding:30px 0;text-align:center">No allocation reaches ${f2(sc.target)} within these limits.</p>`;
+      q('[data-chart="alloc"]').innerHTML=m; q('[data-chart="bands"]').innerHTML=m;
+    }
+    tb.querySelectorAll("tr").forEach((tr,i)=>{ const p=sol&&sol.plan[i], s=(k,v)=>tr.querySelector(`[data-c="${k}"]`).innerHTML=v;
+      s("eta",(sc.kappa[i]/5).toFixed(2));
+      if(!p){ ["h0","h1","h2","t","E","S","cut","g"].forEach(k=>s(k,"–")); return; }
+      p.h.forEach((v,j)=>s("h"+j,f1(v))); s("t",`<b>${f1(p.t)}</b>`); s("E",f1(p.E)); s("S",f1(p.S)); s("cut",f1(p.cut));
+      const gp=COMMON.G[p.ka]; s("g",`<span class="grade g${gp}">${gp}</span>`); });
+    q("[data-tfoot]").innerHTML= sol? `<tr><td><b>Total</b></td><td></td><td></td><td>${f1(sol.plan.reduce((a,p)=>a+p.h[0],0))}</td><td>${f1(sol.plan.reduce((a,p)=>a+p.h[1],0))}</td><td>${f1(sol.plan.reduce((a,p)=>a+p.h[2],0))}</td><td><b>${f1(sol.hours)}</b></td><td></td><td></td><td></td><td><b>${f2(sol.cgpa)}</b></td></tr>`:"";
+    q("[data-insight]").innerHTML=insightFor(sol,sc);
+    bindTips(root);
+    root.__sol=sol;
+  }
+  render();
+}
+
+/* ================= CONCLUSION ================= */
+function drawConclusion(){
+  const keys=["finance","engineer","nonengineer"], sols=keys.map(k=>solve(PROFILES[k]));
+  const labels={finance:"Durga · Finance",engineer:"Visal · Engineer",nonengineer:"Non-Engineer"}, colors={finance:"var(--p1)",engineer:"var(--p2)",nonengineer:"var(--p3)"};
+  const maxT=Math.max(...sols.flatMap(s=>s.plan.map(p=>p.t)));
+  const shade=t=>`color-mix(in srgb, var(--accent) ${Math.round(8+t/maxT*42)}%, transparent)`;
+  let h=`<thead><tr><th>Course</th>${keys.map(k=>`<th><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${colors[k]};margin-right:6px"></span>${labels[k]}</th>`).join("")}</tr></thead><tbody>`;
+  COURSES.forEach((c,i)=>{ h+=`<tr><td>${esc(c.name)}</td>`+sols.map(s=>{ const p=s.plan[i], gp=COMMON.G[p.ka]; return `<td style="background:${shade(p.t)}"><span class="cell"><span class="h">${f1(p.t)} h</span><span class="grade g${gp}">${gp}</span></span></td>`; }).join("")+`</tr>`; });
+  h+=`</tbody><tfoot><tr><td><b>Total hours · CGPA</b></td>${sols.map((s,j)=>`<td><b>${f1(s.hours)} h · ${f2(s.cgpa)}</b><div class="note">budget ${PROFILES[keys[j]].Tmax} h · target ${f2(PROFILES[keys[j]].target)}</div></td>`).join("")}</tr></tfoot>`;
+  $("matrix").innerHTML=h;
+  // frontier
+  const W=600,H=300,l=44,r=20,t=22,b=36, sx=v=>l+(v-7)/3*(W-l-r);
+  const series=keys.map(k=>{ const pts=[]; for(let v=7;v<=10.0001;v+=0.05){ const s=solve(PROFILES[k],+v.toFixed(2)); pts.push({x:+v.toFixed(2),y:s?s.hours:null}); } return {k,pts}; });
+  const ymax=niceMax(Math.max(...series.flatMap(s=>s.pts.filter(p=>p.y!=null).map(p=>p.y)))*1.08), sy=v=>t+(1-v/ymax)*(H-t-b);
+  let g=""; const ys=ymax>100?20:10;
+  for(let v=0;v<=ymax;v+=ys) g+=`<line class="gridl" x1="${l}" x2="${W-r}" y1="${sy(v)}" y2="${sy(v)}"/><text x="${l-8}" y="${sy(v)+4}" text-anchor="end">${v}</text>`;
+  for(let v=7;v<=10;v+=0.5) g+=`<text x="${sx(v)}" y="${H-16}" text-anchor="middle">${v.toFixed(1)}</text>`;
+  g+=`<text x="${(l+W-r)/2}" y="${H}" text-anchor="middle">Target CGPA</text><text x="${l-8}" y="${t-8}" text-anchor="end" style="font-size:10px">hours</text>`;
+  series.forEach(s=>{ let d="",on=false; s.pts.forEach((p,i)=>{ if(p.y==null){on=false;return;} const X=sx(p.x),Y=sy(p.y); d+=on?`V${Y}`:`M${X},${Y}`; on=true; const nx=i<s.pts.length-1&&s.pts[i+1].y!=null?sx(s.pts[i+1].x):X; d+=`H${nx}`; });
+    g+=`<path d="${d}" fill="none" stroke="${colors[s.k]}" stroke-width="2.25" stroke-linejoin="round"/>`;
+    const pr=PROFILES[s.k], sol=solve(pr); if(sol) g+=`<circle cx="${sx(pr.target)}" cy="${sy(sol.hours)}" r="5.5" fill="${colors[s.k]}" stroke="var(--surface)" stroke-width="2" data-tip="<b>${labels[s.k]}</b><br>Baseline: ${f1(sol.hours)} h for CGPA ${f2(pr.target)}"/>`;
+  });
+  const cw=(W-l-r)/60;
+  series[0].pts.forEach((p,i)=>{ const rows=series.map(s=>`${labels[s.k]}: ${s.pts[i].y==null?"infeasible":f1(s.pts[i].y)+" h"}`).join("<br>"); g+=`<rect x="${sx(p.x)-cw/2}" y="${t}" width="${cw}" height="${H-t-b}" fill="transparent" data-tip="<b>Target ${p.x.toFixed(2)}</b><br>${rows}"/>`; });
+  $("frontier").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Minimum hours by target CGPA for three profiles">${g}</svg>`;
+  $("frontLegend").innerHTML=keys.map(k=>`<span><i style="background:${colors[k]}"></i>${labels[k]}</span>`).join("")+`<span class="note">Dot = baseline scenario</span>`;
+  bindTips($("frontier"));
+  const maxTarget=k=>{ const s=series.find(x=>x.k===k); const p=[...s.pts].reverse().find(p=>p.y!=null); return p?p.x:null; };
+  const [F,E,N]=sols;
+  $("concLede").textContent=`All three students take the same five courses, but the optimal plans differ: ${f1(F.hours)} h, ${f1(E.hours)} h and ${f1(N.hours)} h. The differences come only from confidence, baseline preparation and each student's own constraints.`;
+  const tk=[
+    [`Confidence decides where hours go.`,`The model puts hours where marks are cheapest. Durga spends just ${f1(F.plan[0].t)} h on Financial Management for a 9, while the non-engineer earns 10s in OB and Marketing.`],
+    [`The model chooses which grades to “buy”.`,`The non-engineer settles for a 7 in Programming and makes it up with two 10s. A trade-off like this is hard to spot by intuition but falls straight out of the MILP.`],
+    [`Policy constraints can drive the effort.`,`Visal's 10-hour floor binds for ${E.plan.filter(p=>Math.abs(p.t-10)<1e-6).length} of 5 courses, so marks end up above what the grade needs. Without the floor, the same 8.0 needs only ${f1(solve(Object.assign(clone(PROFILES.engineer),{tmin:0})).hours)} h.`],
+    [`Each target has a price, and a ceiling.`,`The frontier shows rising marginal effort. Within their budgets, the highest feasible targets are ${maxTarget("finance").toFixed(2)} (Durga), ${maxTarget("engineer").toFixed(2)} (Visal) and ${maxTarget("nonengineer").toFixed(2)} (non-engineer).`],
+  ];
+  $("takeaways").innerHTML=tk.map((x,i)=>`<div class="tk"><div class="n">${i+1}</div><p><b>${x[0]}</b> ${x[1]}</p></div>`).join("")+
+    `<div class="tk" style="grid-column:1/-1"><div class="n" style="background:var(--surface-2);color:var(--text-2)">↗</div><p><b>Limitations and next steps.</b> Peer performance is held at last year's μ and σ, confidence is self-rated, and the curve parameters (w, β) are assumptions. Natural extensions are a safety margin above cut-offs, chance constraints on exam scores, and a week-by-week schedule.</p></div>`;
+  bindTips($("conclusion"));
+}
+
+/* ================= NAV ================= */
+const slides=[...document.querySelectorAll("section.slide")];
+$("links").innerHTML=slides.map(s=>`<a href="#${s.id}" data-id="${s.id}">${s.dataset.title}</a>`).join("");
+$("agenda").innerHTML=slides.slice(1).map((s,i)=>`<a href="#${s.id}"><span>${String(i+1).padStart(2,"0")}</span><b>${s.dataset.title}</b></a>`).join("");
+function current(){ const y=scrollY+innerHeight*0.35; let idx=0; slides.forEach((s,i)=>{ if(s.offsetTop<=y) idx=i; }); return idx; }
+function go(d){ const i=Math.max(0,Math.min(slides.length-1,current()+d)); slides[i].scrollIntoView({behavior:"smooth"}); }
+function onScroll(){ const i=current(); document.querySelectorAll(".links a").forEach((a,j)=>a.classList.toggle("on",j===i)); const max=document.documentElement.scrollHeight-innerHeight; $("progress").style.width=(max>0?scrollY/max*100:0)+"%"; const on=document.querySelector(".links a.on"), bar=$("links"); if(on){ const L=on.offsetLeft, R=L+on.offsetWidth; if(L<bar.scrollLeft) bar.scrollLeft=L-8; else if(R>bar.scrollLeft+bar.clientWidth) bar.scrollLeft=R-bar.clientWidth+8; } }
+addEventListener("scroll",onScroll,{passive:true});
+$("prev").onclick=()=>go(-1); $("next").onclick=()=>go(1); $("print").onclick=()=>print();
+addEventListener("keydown",e=>{ if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return; if(["ArrowRight","PageDown"].includes(e.key)){e.preventDefault();go(1);} if(["ArrowLeft","PageUp"].includes(e.key)){e.preventDefault();go(-1);} });
+$("theme").onclick=()=>{ const r=document.documentElement, cur=r.getAttribute("data-theme"); const dark=cur?cur==="dark":matchMedia("(prefers-color-scheme: dark)").matches; r.setAttribute("data-theme",dark?"light":"dark"); try{localStorage.setItem("shd-theme",r.getAttribute("data-theme"));}catch(e){} };
+try{ const th=localStorage.getItem("shd-theme"); if(th) document.documentElement.setAttribute("data-theme",th); }catch(e){}
+
+/* ================= INIT ================= */
+drawNormal(); drawSlab(); drawCons();
+document.querySelectorAll("[data-demo]").forEach(el=>mountDemo(el, PROFILES[el.dataset.demo]));
+drawConclusion(); onScroll();
+window.__check=()=>({finance:document.querySelector('[data-demo="finance"]').__sol, engineer:document.querySelector('[data-demo="engineer"]').__sol, nonengineer:document.querySelector('[data-demo="nonengineer"]').__sol});
+})();
+</script>
+</body>
+</html>
