@@ -200,8 +200,7 @@ footer{max-width:1240px;margin:0 auto;padding:18px 24px 40px;font-size:12px;colo
 <!-- 00 COVER -->
 <section class="slide" id="cover" data-title="Dashboard">
   <div class="in">
-    <div class="kicker">Operations Research Project · DoMS, IIT Madras</div>
-    <h1>How few hours does it take to hit your target CGPA?</h1>
+    <h1>Operation CGPA : Making every study hour count</h1>
     <p class="lede">A mixed integer linear programme that splits a student's study time across five MBA courses. It finds the smallest number of hours that still reaches a target CGPA under relative grading.</p>
     <div class="cover-meta">
       <div><b>Mixed integer LP</b>Model type</div>
@@ -210,7 +209,6 @@ footer{max-width:1240px;margin:0 auto;padding:18px 24px 40px;font-size:12px;colo
       <div><b>3 student profiles</b>Demos</div>
     </div>
     <div class="agenda" id="agenda"></div>
-    <p class="hint noprint">Use <kbd>←</kbd> <kbd>→</kbd> or <kbd>PgUp</kbd> <kbd>PgDn</kbd> to move between sections. The demos re-solve live when you change any input.</p>
   </div>
 </section>
 
@@ -389,7 +387,7 @@ const PROFILES = {
     blurb:"Strong in programming and quantitative courses. Sets a 10-hour floor for every course so nothing is neglected.",
     source:"Inputs from the workbook tab “Visal Engineer”.",
     target:8.0, Tmax:70, tmin:10, tmax:30, E0:10, w:[10,10,15], kappa:[3,4.5,5,4,4] },
-  nonengineer: { num:"07", key:"nonengineer", initials:"N", color:"var(--p3)", title:"Non-Engineering background",
+  nonengineer: { num:"07", key:"nonengineer", initials:"N", color:"var(--p3)", title:"Ann . Non-Engineering background",
     blurb:"A commerce or humanities graduate: very confident in OB and marketing, weak in programming and OR.",
     source:"Illustrative inputs (no workbook tab). Replace with real data.",
     target:8.6, Tmax:75, tmin:5, tmax:40, E0:14, w:[10,10,15], kappa:[3.5,2,1.5,5,4.5] }
@@ -537,7 +535,7 @@ function insightFor(sol, sc){
 function mountDemo(root, preset){
   let sc=clone(preset);
   root.innerHTML=`
-    <div class="kicker"><span class="n">${preset.num}</span> Demo · ${preset.key==="finance"?"Finance":preset.key==="engineer"?"Engineer":"Non-Engineer"}</div>
+    <div class="kicker"><span class="n">${preset.num}</span> Demo · ${preset.key==="finance"?"Finance":preset.key==="engineer"?"Engineer":"Ann Non-Engineer"}</div>
     <div class="persona">
       <div class="avatar" style="background:${preset.color}">${preset.initials}</div>
       <div class="who"><h2 class="st">${esc(preset.title)}</h2><p>${esc(preset.blurb)}</p></div>
